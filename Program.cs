@@ -63,7 +63,7 @@ foreach (var k in keywords) Console.WriteLine($"  - {k}");
 Console.WriteLine();
 
 // Versiones normalizadas de las frases clave (una sola vez)
-var keywordsNorm = keywords.Select(Normalize).ToList();
+var keywordsNorm = keywords.Select(NormalizeForMatch).ToList();
 
 // --- Procesar cada PDF de la carpeta de entrada -----------------------------
 var pdfs = Directory.GetFiles(entradaDir, "*.pdf", SearchOption.AllDirectories)
@@ -120,7 +120,7 @@ int ProcesarPdf(string pdfPath, string inputRoot, string outputRoot, List<string
     var startPages = new List<int>(); // indices base 0
     for (int i = 0; i < totalPaginas; i++)
     {
-        string norm = Normalize(textoPorPagina[i]);
+        string norm = NormalizeForMatch(textoPorPagina[i]);
         if (palabras.Any(k => norm.Contains(k)))
             startPages.Add(i);
     }
@@ -238,6 +238,13 @@ string Normalize(string s)
     string sinAcentos = sb.ToString().Normalize(NormalizationForm.FormC);
     return Regex.Replace(sinAcentos, @"\s+", " ").Trim();
 }
+
+// Igual que Normalize, pero sin ningun espacio. Se usa para comparar frases
+// clave contra el texto de la pagina: algunos PDF extraen el texto con
+// palabras pegadas entre lineas (sin espacio) o con cada letra como token
+// suelto (con espacio de mas), y en ambos casos quitar todo espacio antes de
+// comparar hace que solo importe el orden de los caracteres.
+string NormalizeForMatch(string s) => Regex.Replace(Normalize(s), @"\s+", "");
 
 string SanitizeFileName(string name)
 {
