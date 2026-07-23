@@ -121,8 +121,9 @@ int ProcesarPdf(string pdfPath, string inputRoot, string outputRoot, List<string
     for (int i = 0; i < totalPaginas; i++)
     {
         string norm = NormalizeForMatch(textoPorPagina[i]);
-        if (palabras.Any(k => norm.Contains(k)))
-            startPages.Add(i);
+        bool match = palabras.Any(k => norm.Contains(k));
+        if (match) startPages.Add(i);
+        Console.WriteLine($"    Pagina {i + 1}: {(match ? "MATCH (inicio)" : "---")}");
     }
 
     Console.WriteLine($"  Paginas: {totalPaginas} | Inicios detectados: {startPages.Count}");
