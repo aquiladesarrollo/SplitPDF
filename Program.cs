@@ -41,7 +41,7 @@ if (!File.Exists(keywordsFile))
      */
     File.WriteAllLines(keywordsFile, new[]
     {
-        "Estado de Cuenta"
+        "Questions about your statement"
     }, new UTF8Encoding(false));
     Console.WriteLine($"Se creo el archivo de frases clave: {keywordsFile}");
     Console.WriteLine("Editalo con tus frases y vuelve a ejecutar.");
@@ -105,10 +105,15 @@ int ProcesarPdf(string pdfPath, string inputRoot, string outputRoot, List<string
     Console.WriteLine($"> {Path.GetRelativePath(inputRoot, pdfPath)}");
 
     // 1-4) Extraer texto de cada pagina y detectar paginas de inicio
+    // Se usa GetWords() en vez de page.Text: PdfPig no siempre inserta espacio
+    // entre lineas al concatenar el texto crudo, lo que pega palabras entre
+    // saltos de linea (p.ej. "your" + "statement" -> "yourstatement").
     string[] textoPorPagina;
     using (var doc = PdfPigDocument.Open(pdfPath))
     {
-        textoPorPagina = doc.GetPages().Select(p => p.Text ?? string.Empty).ToArray();
+        textoPorPagina = doc.GetPages()
+            .Select(p => string.Join(" ", p.GetWords().Select(w => w.Text)))
+            .ToArray();
     }
 
     int totalPaginas = textoPorPagina.Length;
