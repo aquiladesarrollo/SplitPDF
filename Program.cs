@@ -14,12 +14,23 @@ using PdfPigDocument = UglyToad.PdfPig.PdfDocument;
 //  por cada rango [inicio -> siguiente inicio - 1] dentro de "Splits".
 // ============================================================================
 
+// ============================================================================
+//  >>> FRASES CLAVE <<<  (EDITA AQUI)
+//  ------------------------------------------------------------------------
+//  Cada frase marca un "inicio de documento". Puedes poner varias.
+//  La busqueda ignora mayusculas/minusculas, acentos y espacios, asi que
+//  no importa como el PDF parta o pegue las palabras.
+// ============================================================================
+List<string> keywords = new()
+{
+    "Questions about your statement",
+};
+
 // --- Rutas base: Documentos\SplitPDF\{Entrada, Splits} ----------------------
 string documentos = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 string baseDir = Path.Combine(documentos, "SplitPDF");
 string entradaDir = Path.Combine(baseDir, "Entrada");
 string splitsDir = Path.Combine(baseDir, "Splits");
-string keywordsFile = Path.Combine(baseDir, "keywords.txt");
 
 Directory.CreateDirectory(entradaDir);
 Directory.CreateDirectory(splitsDir);
@@ -30,31 +41,9 @@ Console.WriteLine($"Entrada : {entradaDir}");
 Console.WriteLine($"Salida  : {splitsDir}");
 Console.WriteLine();
 
-// --- Cargar frases clave (se crea el archivo con ejemplos si no existe) -----
-if (!File.Exists(keywordsFile))
-{
-    /*
-     * "# Una frase clave por linea. Lineas que empiezan con # se ignoran.",
-        "# La busqueda ignora mayusculas/minusculas y acentos.",
-        "Estado de Cuenta",
-        "Resumen de Movimientos",
-     */
-    File.WriteAllLines(keywordsFile, new[]
-    {
-        "Questions about your statement"
-    }, new UTF8Encoding(false));
-    Console.WriteLine($"Se creo el archivo de frases clave: {keywordsFile}");
-    Console.WriteLine("Editalo con tus frases y vuelve a ejecutar.");
-}
-
-List<string> keywords = File.ReadAllLines(keywordsFile)
-    .Select(l => l.Trim())
-    .Where(l => l.Length > 0 && !l.StartsWith('#'))
-    .ToList();
-
 if (keywords.Count == 0)
 {
-    Console.WriteLine("No hay frases clave definidas en keywords.txt. Nada que hacer.");
+    Console.WriteLine("No hay frases clave definidas en el codigo. Nada que hacer.");
     return;
 }
 
