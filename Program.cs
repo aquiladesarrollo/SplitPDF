@@ -66,7 +66,7 @@ Console.WriteLine();
 var keywordsNorm = keywords.Select(Normalize).ToList();
 
 // --- Procesar cada PDF de la carpeta de entrada -----------------------------
-var pdfs = Directory.GetFiles(entradaDir, "*.pdf", SearchOption.TopDirectoryOnly)
+var pdfs = Directory.GetFiles(entradaDir, "*.pdf", SearchOption.AllDirectories)
     .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
     .ToList();
 
@@ -82,7 +82,7 @@ foreach (var pdfPath in pdfs)
 {
     try
     {
-        totalGenerados += ProcesarPdf(pdfPath, splitsDir, keywordsNorm);
+        totalGenerados += ProcesarPdf(pdfPath, entradaDir, splitsDir, keywordsNorm);
     }
     catch (Exception ex)
     {
@@ -98,10 +98,11 @@ Console.WriteLine($"Listo. Se generaron {totalGenerados} archivo(s) en {splitsDi
 //  Funciones
 // ============================================================================
 
-int ProcesarPdf(string pdfPath, string outputRoot, List<string> palabras)
+int ProcesarPdf(string pdfPath, string inputRoot, string outputRoot, List<string> palabras)
 {
     string nombre = Path.GetFileNameWithoutExtension(pdfPath);
-    Console.WriteLine($"> {Path.GetFileName(pdfPath)}");
+    string subcarpeta = Path.GetDirectoryName(Path.GetRelativePath(inputRoot, pdfPath)) ?? string.Empty;
+    Console.WriteLine($"> {Path.GetRelativePath(inputRoot, pdfPath)}");
 
     // 1-4) Extraer texto de cada pagina y detectar paginas de inicio
     string[] textoPorPagina;
@@ -131,8 +132,8 @@ int ProcesarPdf(string pdfPath, string outputRoot, List<string> palabras)
     if (startPages[0] > 0)
         Console.WriteLine($"  [Aviso] Las paginas 1-{startPages[0]} van antes del primer inicio y no se exportan.");
 
-    // 6) Construir rangos y 7) exportar
-    string outputDir = Path.Combine(outputRoot, SanitizeFileName(nombre));
+    // 6) Construir rangos y 7) exportar (replicando la subcarpeta de origen dentro de Splits)
+    string outputDir = Path.Combine(outputRoot, subcarpeta, SanitizeFileName(nombre));
     Directory.CreateDirectory(outputDir);
 
     int generados = 0;
