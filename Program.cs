@@ -2,7 +2,8 @@
     using System.Text;
     using System.Text.RegularExpressions;
     using PdfSharp.Pdf.IO;
-    using PdfSharpDocument = PdfSharp.Pdf.PdfDocument;
+using iText.Kernel.Pdf;
+using PdfSharpDocument = PdfSharp.Pdf.PdfDocument;
     using PdfPigDocument = UglyToad.PdfPig.PdfDocument;
 
 // ============================================================================
@@ -152,19 +153,37 @@ List<string> keywords = new()
         return generados;
     }
 
-    // Copia las paginas [start..end] (indices base 0, inclusivo) a un PDF nuevo
-    void ExportarPaginas(string origen, int start, int end, string destino)
-    {
-        using var input = PdfReader.Open(origen, PdfDocumentOpenMode.Import);
-        using var output = new PdfSharpDocument();
-        for (int p = start; p <= end && p < input.PageCount; p++)
-            output.AddPage(input.Pages[p]);
-        output.Save(destino);
-    }
+// Copia las paginas [start..end] (indices base 0, inclusivo) a un PDF nuevo
+void ExportarPaginas(string origen, int start, int end, string destino)
+{
+    using var reader = new iText.Kernel.Pdf.PdfReader(origen);
 
-    // Intenta armar un nombre con numero de cuenta / mes / anio de la portada.
-    // Si no encuentra nada, usa doc_NN.
-    string ConstruirNombre(string textoPagina, int indice)
+    // Ignora restricciones de owner password cuando el PDF
+    // puede abrirse sin contraseña de usuario.
+
+    Console.WriteLine($"Archivo: {origen}");
+    Console.WriteLine($"Encrypted: {reader.IsEncrypted()}");
+    Console.WriteLine($"Full permissions ANTES: {reader.IsOpenedWithFullPermission()}");
+    reader.SetUnethicalReading(true);
+
+    using var src = new PdfDocument(reader);
+    using var writer = new PdfWriter(destino);
+    using var dst = new PdfDocument(writer);
+
+    int desde = start + 1;
+    int hasta = Math.Min(end + 1, src.GetNumberOfPages());
+
+    Console.WriteLine($"Rango real a exportar: {desde}-{hasta}");
+    Console.WriteLine($"Destino: {destino}");
+
+    src.CopyPagesTo(desde, hasta, dst);
+
+    Console.WriteLine("Exportación completada correctamente.");
+}
+
+// Intenta armar un nombre con numero de cuenta / mes / anio de la portada.
+// Si no encuentra nada, usa doc_NN.
+string ConstruirNombre(string textoPagina, int indice)
     {
         var partes = new List<string>();
 
