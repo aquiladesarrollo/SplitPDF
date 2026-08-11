@@ -156,27 +156,29 @@ List<string> keywords = new()
 // Copia las paginas [start..end] (indices base 0, inclusivo) a un PDF nuevo
 void ExportarPaginas(string origen, int start, int end, string destino)
 {
-    using var reader = new iText.Kernel.Pdf.PdfReader(origen);
+    using (var reader = new iText.Kernel.Pdf.PdfReader(origen))
+    {
+        reader.SetUnethicalReading(true);
 
-    // Ignora restricciones de owner password cuando el PDF
-    // puede abrirse sin contraseña de usuario.
+        using (var src = new PdfDocument(reader))
+        {
+            Console.WriteLine($"Archivo: {origen}");
+            Console.WriteLine($"Encrypted: {reader.IsEncrypted()}");
+            Console.WriteLine($"Full permissions: {reader.IsOpenedWithFullPermission()}");
 
-    Console.WriteLine($"Archivo: {origen}");
-    Console.WriteLine($"Encrypted: {reader.IsEncrypted()}");
-    Console.WriteLine($"Full permissions ANTES: {reader.IsOpenedWithFullPermission()}");
-    reader.SetUnethicalReading(true);
+            using (var writer = new PdfWriter(destino))
+            using (var dst = new PdfDocument(writer))
+            {
+                int desde = start + 1;
+                int hasta = Math.Min(end + 1, src.GetNumberOfPages());
 
-    using var src = new PdfDocument(reader);
-    using var writer = new PdfWriter(destino);
-    using var dst = new PdfDocument(writer);
+                Console.WriteLine($"Rango real a exportar: {desde}-{hasta}");
+                Console.WriteLine($"Destino: {destino}");
 
-    int desde = start + 1;
-    int hasta = Math.Min(end + 1, src.GetNumberOfPages());
-
-    Console.WriteLine($"Rango real a exportar: {desde}-{hasta}");
-    Console.WriteLine($"Destino: {destino}");
-
-    src.CopyPagesTo(desde, hasta, dst);
+                src.CopyPagesTo(desde, hasta, dst);
+            }
+        }
+    }
 
     Console.WriteLine("Exportación completada correctamente.");
 }
