@@ -131,27 +131,45 @@ List<string> keywords = new()
         if (startPages[0] > 0)
             Console.WriteLine($"  [Aviso] Las paginas 1-{startPages[0]} van antes del primer inicio y no se exportan.");
 
-        // 6) Construir rangos y 7) exportar (replicando la subcarpeta de origen dentro de Splits)
-        string outputDir = Path.Combine(outputRoot, subcarpeta, SanitizeFileName(nombre));
-        Directory.CreateDirectory(outputDir);
+    // 6) Construir rangos y 7) exportar (replicando la subcarpeta de origen dentro de Splits)
+    // Mantiene solamente la estructura de subcarpetas original.
+    // NO crea una carpeta adicional con el nombre del PDF.
+    string outputDir = Path.Combine(outputRoot, subcarpeta);
+    Directory.CreateDirectory(outputDir);
 
-        int generados = 0;
-        for (int i = 0; i < startPages.Count; i++)
-        {
-            int start = startPages[i];
-            int end = (i < startPages.Count - 1) ? startPages[i + 1] - 1 : totalPaginas - 1;
+    int generados = 0;
 
-            // 8) Nombre a partir de la primera pagina del rango (cuenta/mes/anio)
-            string baseNombre = ConstruirNombre(textoPorPagina[start], i + 1);
-            string destino = RutaUnica(outputDir, baseNombre);
+    for (int i = 0; i < startPages.Count; i++)
+    {
+        int start = startPages[i];
+        int end = (i < startPages.Count - 1)
+            ? startPages[i + 1] - 1
+            : totalPaginas - 1;
 
-            ExportarPaginas(pdfPath, start, end, destino);
-            Console.WriteLine($"  [{i + 1}] paginas {start + 1}-{end + 1}  ->  {Path.GetFileName(destino)}");
-            generados++;
-        }
+        // Nombre:
+        // archivo_2025_03.pdf
+        // o, si no encuentra fecha:
+        // archivo_paginas_1-5.pdf
+        string baseNombre = ConstruirNombre(
+            nombre,
+            textoPorPagina[start],
+            start,
+            end
+        );
+
+        string destino = RutaUnica(outputDir, baseNombre);
+
+        ExportarPaginas(pdfPath, start, end, destino);
+
+        Console.WriteLine(
+            $"  [{i + 1}] paginas {start + 1}-{end + 1} -> {Path.GetFileName(destino)}"
+        );
+
+        generados++;
+    }
 
         return generados;
-    }
+}
 
 // Copia las paginas [start..end] (indices base 0, inclusivo) a un PDF nuevo
 void ExportarPaginas(string origen, int start, int end, string destino)
@@ -185,25 +203,38 @@ void ExportarPaginas(string origen, int start, int end, string destino)
 
 // Intenta armar un nombre con numero de cuenta / mes / anio de la portada.
 // Si no encuentra nada, usa doc_NN.
-string ConstruirNombre(string textoPagina, int indice)
+string ConstruirNombre(
+    string nombreArchivoOriginal,
+    string textoPagina,
+    int start,
+    int end)
+{
+    var (mes, anio) = ExtraerMesAnio(textoPagina);
+
+    string nombreBase = SanitizeFileName(nombreArchivoOriginal);
+
+    // Si encontramos año y mes:
+    // EstadoCuenta_2025_03.pdf
+    if (anio != null && mes != null)
     {
-        var partes = new List<string>();
+        // Extraer solamente el número del mes.
+        // Ejemplo: "03_marzo" -> "03"
+        string numeroMes = mes.Split('_')[0];
 
-        string? cuenta = ExtraerCuenta(textoPagina);
-        if (cuenta != null) partes.Add("cuenta_" + cuenta);
-
-        var (mes, anio) = ExtraerMesAnio(textoPagina);
-        if (mes != null) partes.Add(mes);
-        if (anio != null) partes.Add(anio);
-
-        string nombre = partes.Count > 0
-            ? string.Join("_", partes)
-            : $"doc_{indice:00}";
-
-        return SanitizeFileName(nombre) + ".pdf";
+        return $"{nombreBase}_{anio}_{numeroMes}.pdf";
     }
 
-    string? ExtraerCuenta(string texto)
+    // Si encontramos solamente el año
+    if (anio != null)
+    {
+        return $"{nombreBase}_{anio}_paginas_{start + 1}-{end + 1}.pdf";
+    }
+
+    // Si no encontramos fecha, usar páginas
+    return $"{nombreBase}_paginas_{start + 1}-{end + 1}.pdf";
+}
+
+string? ExtraerCuenta(string texto)
     {
         // Busca "cuenta / contrato / cliente / clabe" seguido de una secuencia de digitos
         var m = Regex.Match(texto,
