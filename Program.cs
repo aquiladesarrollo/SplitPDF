@@ -24,10 +24,11 @@ using PdfSharpDocument = PdfSharp.Pdf.PdfDocument;
 //INVESTMENTS AND INSURANCE PRODUCTS  - MS
 // "Questions about your statement" = ubs
 // "Net Change in Portfolio is the difference between" - BBVA USA PERSHING (PROBAR;P)
+// "El cambio neto en la cartera es la diferencia entre el valor de la cuenta al" - bbva usa pershing en esp
 // ============================================================================
 List<string> keywords = new()
     {
-        "Net Change in Portfolio is the difference between",
+        "El cambio neto en la cartera es la diferencia entre el valor de la cuenta al",
     };
 
     // --- Rutas base: Documentos\SplitPDF\{Entrada, Splits} ----------------------
